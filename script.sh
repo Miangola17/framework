@@ -15,4 +15,4 @@ echo "Compilation OK !"
 jar -cf framework.jar -C bin .
 
 echo "=== framework.jar genere avec succes ==="
-echo "Vous pouvez copier framework.jar dans sprint0/WebContent/WEB-INF/lib/"
+
