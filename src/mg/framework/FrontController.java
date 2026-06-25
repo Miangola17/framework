@@ -72,7 +72,7 @@ public class FrontController extends HttpServlet {
         resp.setCharacterEncoding("UTF-8");
 
         PrintWriter out = resp.getWriter();
-        out.println("=== FRAMEWORK - Sprint 2 ===");
+        out.println("== FRAMEWORK - Sprint 2 ==");
         out.println("Requete recue : " + uri);
         out.println("Methode       : " + req.getMethod());
         out.println("");
