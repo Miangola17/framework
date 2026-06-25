@@ -3,7 +3,7 @@ echo "=== Compilation du framework ==="
 
 mkdir -p bin
 
-javac -cp lib/servlet-api.jar -d bin src/mg/framework/FrontController.java src/mg/framework/annotation/Controller.java src/mg/framework/utils/ClassScanner.java
+javac -cp lib/servlet-api.jar -d bin src/mg/framework/*.java src/mg/framework/annotation/*.java src/mg/framework/utils/*.java src/mg/monapp/controllers/*.java
 
 if [ $? -ne 0 ]; then
     echo "ERREUR : La compilation a echoue !"
