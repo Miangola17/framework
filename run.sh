@@ -36,6 +36,6 @@ cd /home/gougoula/Téléchargements/apache-tomcat-10.0.16
 sleep 3
 ./bin/startup.sh
 
-echo "✅ Tomcat redémarré"
+echo "✅ Tomcat redemarre"
 echo ""
 echo "=== Framework disponible sur http://localhost:8080/framework ==="

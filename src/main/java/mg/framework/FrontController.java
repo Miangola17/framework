@@ -1,7 +1,6 @@
 
 package mg.framework;
 
-/* */
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -94,7 +93,7 @@ public class FrontController extends HttpServlet {
         resp.setCharacterEncoding("UTF-8");
 
         PrintWriter out = resp.getWriter();
-        out.println("=== FRAMEWORK - Sprint 3 ===");
+        out.println("=== FRAMEWORK - Sprint 4 ===");
         out.println("Requete recue : " + uri);
         out.println("Methode       : " + httpMethod);
         out.println("Route         : " + path);
