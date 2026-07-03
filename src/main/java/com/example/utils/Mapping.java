@@ -1,5 +1,6 @@
 package com.example.utils;
 
+
 public class Mapping {
     String nomClass;
     String nomMethod;
