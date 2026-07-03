@@ -8,7 +8,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "✅ Compilation réussie"
+echo "✅ Compilation reussie"
 echo ""
 echo "=== Déploiement vers Tomcat ==="
 

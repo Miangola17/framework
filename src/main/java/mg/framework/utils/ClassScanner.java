@@ -130,5 +130,6 @@ public class ClassScanner {
         } catch (Throwable ignored) {
         }
         return false;
+        //*//
     }
 }
