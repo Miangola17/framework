@@ -1,6 +1,7 @@
 
 package mg.framework;
 
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -19,10 +20,22 @@ import mg.framework.utils.UrlMappingInfo;
 public class FrontController extends HttpServlet {
 
     private Map<String, UrlMappingInfo> urlMap;
+    private String prefixe;
+    private String suffixe;
 
     @Override
     public void init() throws ServletException {
         super.init();
+
+        this.prefixe = getInitParameter("prefixe");
+        this.suffixe = getInitParameter("suffixe");
+
+        if (this.prefixe == null) {
+            this.prefixe = "/WEB-INF/views/";
+        }
+        if (this.suffixe == null) {
+            this.suffixe = ".jsp";
+        }
 
         @SuppressWarnings("unchecked")
         Map<String, UrlMappingInfo> loadedMap = (Map<String, UrlMappingInfo>) this.getServletContext().getAttribute("urlMap");
@@ -89,20 +102,18 @@ public class FrontController extends HttpServlet {
         String httpMethod = req.getMethod().toUpperCase();
         String currentKey = httpMethod + "|" + path;
 
-        resp.setContentType("text/plain");
-        resp.setCharacterEncoding("UTF-8");
-
-        PrintWriter out = resp.getWriter();
-        out.println("=== FRAMEWORK - Sprint 4 ===");
-        out.println("Requete recue : " + uri);
-        out.println("Methode       : " + httpMethod);
-        out.println("Route         : " + path);
-        out.println("Cle recherche : " + currentKey);
-        out.println("");
-
         UrlMappingInfo mapping = urlMap.get(currentKey);
-        
+
         if (mapping == null) {
+            resp.setContentType("text/plain");
+            resp.setCharacterEncoding("UTF-8");
+            PrintWriter out = resp.getWriter();
+            out.println("=== FRAMEWORK - Sprint 5 ===");
+            out.println("Requete recue : " + uri);
+            out.println("Methode       : " + httpMethod);
+            out.println("Route         : " + path);
+            out.println("Cle recherche : " + currentKey);
+            out.println("");
             out.println("Aucune methode ne correspond a l'URL : " + path + ", methode " + httpMethod);
             out.println("");
             out.println("URLs supportees :");
@@ -111,28 +122,56 @@ public class FrontController extends HttpServlet {
                 UrlMappingInfo info = entry.getValue();
                 out.println(" - " + key + " -> " + info.getControllerClass().getSimpleName() + "." + info.getMethod().getName() + "()");
             }
+            out.flush();
         } else {
-            out.println("URL connue : " + mapping.getUrl());
-            out.println("Classe      : " + mapping.getControllerClass().getName());
-            out.println("Methode     : " + mapping.getMethod().getName());
-            out.println("");
-            out.println("=== Invocation de la methode ===");
-            
             try {
                 Class<?> clazz = mapping.getControllerClass();
                 Object controllerInstance = clazz.getDeclaredConstructor().newInstance();
                 Method methodToInvoke = mapping.getMethod();
-                methodToInvoke.invoke(controllerInstance);
-                out.println("Methode executee avec succes !");
+                Object result = methodToInvoke.invoke(controllerInstance);
+
+                if (result instanceof ModelAndView) {
+                    ModelAndView mv = (ModelAndView) result;
+                    String viewUrl = mv.getUrl();
+                    String fullPath = prefixe + viewUrl + suffixe;
+
+                    for (Map.Entry<String, Object> entry : mv.getData().entrySet()) {
+                        req.setAttribute(entry.getKey(), entry.getValue());
+                    }
+
+                    RequestDispatcher dispatcher = req.getRequestDispatcher(fullPath);
+                    dispatcher.forward(req, resp);
+                } else {
+                    resp.setContentType("text/plain");
+                    resp.setCharacterEncoding("UTF-8");
+                    PrintWriter out = resp.getWriter();
+                    out.println("=== FRAMEWORK - Sprint 5 ===");
+                    out.println("Requete recue : " + uri);
+                    out.println("Methode       : " + httpMethod);
+                    out.println("Route         : " + path);
+                    out.println("Cle recherche : " + currentKey);
+                    out.println("");
+                    out.println("URL connue : " + mapping.getUrl());
+                    out.println("Classe      : " + mapping.getControllerClass().getName());
+                    out.println("Methode     : " + mapping.getMethod().getName());
+                    out.println("");
+                    out.println("=== Invocation de la methode ===");
+                    out.println("Methode executee avec succes !");
+                    out.flush();
+                }
             } catch (NoSuchMethodException e) {
+                resp.setContentType("text/plain");
+                resp.setCharacterEncoding("UTF-8");
+                PrintWriter out = resp.getWriter();
                 out.println("Erreur : Methode introuvable - " + e.getMessage());
                 e.printStackTrace(out);
             } catch (Exception e) {
+                resp.setContentType("text/plain");
+                resp.setCharacterEncoding("UTF-8");
+                PrintWriter out = resp.getWriter();
                 out.println("Erreur lors de l'invocation : " + e.getMessage());
                 e.printStackTrace(out);
             }
         }
-        
-        out.flush();
     }
 }

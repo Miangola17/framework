@@ -1,7 +1,8 @@
-com/example/App.class
-com/example/utils/Utilitaire.class
-com/example/utils/Mapping.class
-com/example/servlet/FrontControllerServlet.class
-com/example/annotation/UrlMapping.class
-com/example/utils/MappingKey.class
-com/example/annotation/AnnotationController.class
+mg/framework/utils/UrlMappingInfo.class
+mg/framework/ModelAndView.class
+mg/framework/utils/Util.class
+mg/framework/FrontController.class
+mg/framework/annotation/Controller.class
+mg/framework/ContextListener.class
+mg/framework/annotation/UrlMapping.class
+mg/framework/utils/ClassScanner.class
