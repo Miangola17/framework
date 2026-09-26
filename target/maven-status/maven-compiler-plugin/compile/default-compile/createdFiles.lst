@@ -1,3 +1,4 @@
+mg/framework/annotation/RestAPI.class
 mg/framework/utils/UrlMappingInfo.class
 mg/framework/ModelAndView.class
 mg/framework/utils/Util.class

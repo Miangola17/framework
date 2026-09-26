@@ -3,6 +3,7 @@
 /home/gougoula/Documents/framework/src/main/java/mg/framework/annotation/Controller.java
 /home/gougoula/Documents/framework/src/main/java/mg/framework/FrontController.java
 /home/gougoula/Documents/framework/src/main/java/mg/framework/annotation/UrlMapping.java
+/home/gougoula/Documents/framework/src/main/java/mg/framework/annotation/RestAPI.java
 /home/gougoula/Documents/framework/src/main/java/mg/framework/ModelAndView.java
 /home/gougoula/Documents/framework/src/main/java/mg/framework/utils/Util.java
 /home/gougoula/Documents/framework/src/main/java/mg/framework/ContextListener.java
