@@ -1,6 +1,7 @@
 
 package mg.framework;
 
+import com.google.gson.Gson;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
@@ -13,6 +14,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import mg.framework.annotation.RestAPI;
 import mg.framework.annotation.UrlMapping;
 import mg.framework.utils.ClassScanner;
 import mg.framework.utils.UrlMappingInfo;
@@ -128,36 +130,56 @@ public class FrontController extends HttpServlet {
                 Class<?> clazz = mapping.getControllerClass();
                 Object controllerInstance = clazz.getDeclaredConstructor().newInstance();
                 Method methodToInvoke = mapping.getMethod();
-                Object result = methodToInvoke.invoke(controllerInstance);
-
-                if (result instanceof ModelAndView) {
-                    ModelAndView mv = (ModelAndView) result;
-                    String viewUrl = mv.getUrl();
-                    String fullPath = prefixe + viewUrl + suffixe;
-
-                    for (Map.Entry<String, Object> entry : mv.getData().entrySet()) {
-                        req.setAttribute(entry.getKey(), entry.getValue());
-                    }
-
-                    RequestDispatcher dispatcher = req.getRequestDispatcher(fullPath);
-                    dispatcher.forward(req, resp);
-                } else {
-                    resp.setContentType("text/plain");
+                
+                RestAPI restApiAnnotation = methodToInvoke.getAnnotation(RestAPI.class);
+                
+                if (restApiAnnotation != null) {
+                    resp.setContentType("application/json");
                     resp.setCharacterEncoding("UTF-8");
                     PrintWriter out = resp.getWriter();
-                    out.println("=== FRAMEWORK - Sprint 5 ===");
-                    out.println("Requete recue : " + uri);
-                    out.println("Methode       : " + httpMethod);
-                    out.println("Route         : " + path);
-                    out.println("Cle recherche : " + currentKey);
-                    out.println("");
-                    out.println("URL connue : " + mapping.getUrl());
-                    out.println("Classe      : " + mapping.getControllerClass().getName());
-                    out.println("Methode     : " + mapping.getMethod().getName());
-                    out.println("");
-                    out.println("=== Invocation de la methode ===");
-                    out.println("Methode executee avec succes !");
+                    
+                    Object result = methodToInvoke.invoke(controllerInstance);
+                    
+                    if (result instanceof String) {
+                        out.print((String) result);
+                    } else {
+                        Gson gson = new Gson();
+                        String json = gson.toJson(result);
+                        out.print(json);
+                    }
                     out.flush();
+                } else {
+                    Object result = methodToInvoke.invoke(controllerInstance);
+
+                    if (result instanceof ModelAndView) {
+                        ModelAndView mv = (ModelAndView) result;
+                        String viewUrl = mv.getUrl();
+                        String fullPath = prefixe + viewUrl + suffixe;
+
+                        for (Map.Entry<String, Object> entry : mv.getData().entrySet()) {
+                            req.setAttribute(entry.getKey(), entry.getValue());
+                        }
+
+                        RequestDispatcher dispatcher = req.getRequestDispatcher(fullPath);
+                        dispatcher.forward(req, resp);
+                    } else {
+                        resp.setContentType("text/plain");
+                        resp.setCharacterEncoding("UTF-8");
+                        PrintWriter out = resp.getWriter();
+                        out.println("=== FRAMEWORK - Sprint 6 ===");
+                        out.println("Requete recue : " + uri);
+                        out.println("Methode       : " + httpMethod);
+                        out.println("Route         : " + path);
+                        out.println("Cle recherche : " + currentKey);
+                        out.println("");
+                        out.println("URL connue : " + mapping.getUrl());
+                        out.println("Classe      : " + mapping.getControllerClass().getName());
+                        out.println("Methode     : " + mapping.getMethod().getName());
+                        out.println("");
+                        out.println("=== Invocation de la methode ===");
+                        out.println("Methode executee avec succes !");
+                        out.flush();
+                    }
                 }
             } catch (NoSuchMethodException e) {
                 resp.setContentType("text/plain");
