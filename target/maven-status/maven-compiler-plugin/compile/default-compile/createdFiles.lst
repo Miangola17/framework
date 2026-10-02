@@ -1,9 +1,0 @@
-mg/framework/annotation/RestAPI.class
-mg/framework/utils/UrlMappingInfo.class
-mg/framework/ModelAndView.class
-mg/framework/utils/Util.class
-mg/framework/FrontController.class
-mg/framework/annotation/Controller.class
-mg/framework/ContextListener.class
-mg/framework/annotation/UrlMapping.class
-mg/framework/utils/ClassScanner.class
