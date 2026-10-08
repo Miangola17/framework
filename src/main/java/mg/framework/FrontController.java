@@ -133,12 +133,7 @@ public class FrontController extends HttpServlet {
                 Method methodToInvoke = mapping.getMethod();
                 
                 // Data Binding : remplir les paramètres de la méthode
-                Class<?>[] paramTypes = methodToInvoke.getParameterTypes();
-                Object[] args = new Object[paramTypes.length];
-                
-                for (int i = 0; i < paramTypes.length; i++) {
-                    args[i] = Binder.bind(req, paramTypes[i]);
-                }
+                Object[] args = Binder.bindParams(req, methodToInvoke);
                 
                 RestAPI restApiAnnotation = methodToInvoke.getAnnotation(RestAPI.class);
                 

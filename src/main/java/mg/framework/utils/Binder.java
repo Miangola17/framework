@@ -1,41 +1,24 @@
 package mg.framework.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.lang.reflect.Field;
-import java.util.Enumeration;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 
 public class Binder {
 
-    public static Object bind(HttpServletRequest request, Class<?> type) {
-        try {
-            // Instancier un objet vide du type donné
-            Object instance = type.getDeclaredConstructor().newInstance();
+    public static Object[] bindParams(HttpServletRequest request, Method method) {
+        Parameter[] parameters = method.getParameters();
+        Object[] args = new Object[parameters.length];
 
-            // Récupérer tous les paramètres du formulaire
-            Enumeration<String> paramNames = request.getParameterNames();
+        for (int i = 0; i < parameters.length; i++) {
+            String paramName = parameters[i].getName();
+            String paramValue = request.getParameter(paramName);
+            Class<?> paramType = parameters[i].getType();
 
-            while (paramNames.hasMoreElements()) {
-                String paramName = paramNames.nextElement();
-                String paramValue = request.getParameter(paramName);
-
-                // Chercher le champ correspondant dans l'objet
-                try {
-                    Field field = type.getDeclaredField(paramName);
-                    field.setAccessible(true);
-
-                    // Convertir la valeur selon le type du champ
-                    Object convertedValue = convertValue(paramValue, field.getType());
-                    field.set(instance, convertedValue);
-                } catch (NoSuchFieldException e) {
-                    // Le champ n'existe pas dans l'objet, on ignore
-                    System.out.println("Champ '" + paramName + "' non trouve dans la classe " + type.getSimpleName());
-                }
-            }
-
-            return instance;
-        } catch (Exception e) {
-            throw new RuntimeException("Erreur lors du binding : " + e.getMessage(), e);
+            args[i] = convertValue(paramValue, paramType);
         }
+
+        return args;
     }
 
     private static Object convertValue(String value, Class<?> targetType) {
