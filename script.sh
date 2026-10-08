@@ -9,7 +9,7 @@ mkdir -p bin
 "$JAVAC" -cp lib/servlet-api.jar:lib/gson-2.10.1.jar -d bin src/main/java/mg/framework/**/*.java
 
 if [ $? -ne 0 ]; then
-    echo "ERREUR : La compilation a échoué !"
+    echo "ERREUR : La compilation a echoue !"
     exit 1
 fi
 
