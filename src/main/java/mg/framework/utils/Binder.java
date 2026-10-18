@@ -1,6 +1,10 @@
 package mg.framework.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
+import mg.framework.MapFile;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -23,6 +27,8 @@ public class Binder {
             if (isSimple(paramType)) {
                 String paramValue = request.getParameter(paramName);
                 args[i] = convertValue(paramValue, paramType);
+            } else if (paramType == MapFile.class) {
+                args[i] = bindMapFile(request, paramName);
             } else {
                 args[i] = bindObject(request, paramName, paramType);
             }
@@ -40,6 +46,39 @@ public class Binder {
                type == boolean.class || type == Boolean.class;
     }
 
+    private static MapFile bindMapFile(HttpServletRequest request, String paramName) {
+        try {
+            Part part = request.getPart(paramName);
+            if (part == null) {
+                return null;
+            }
+
+            String fileName = part.getSubmittedFileName();
+            if (fileName == null || fileName.isEmpty()) {
+                return null;
+            }
+
+            String nom;
+            String extension = "";
+            int dotIndex = fileName.lastIndexOf('.');
+            if (dotIndex > 0) {
+                nom = fileName.substring(0, dotIndex);
+                extension = fileName.substring(dotIndex + 1);
+            } else {
+                nom = fileName;
+            }
+
+            byte[] binaire = new byte[(int) part.getSize()];
+            try (InputStream inputStream = part.getInputStream()) {
+                inputStream.read(binaire);
+            }
+
+            return new MapFile(nom, extension, binaire);
+        } catch (IOException | jakarta.servlet.ServletException e) {
+            throw new RuntimeException("Error binding MapFile: " + e.getMessage(), e);
+        }
+    }
+
     private static Object bindObject(HttpServletRequest request, String paramName, Class<?> objectType) {
         try {
             Object obj = objectType.getDeclaredConstructor().newInstance();
@@ -54,6 +93,18 @@ public class Binder {
                         setByPath(obj, path, values[0]);
                     }
                 }
+            }
+
+            try {
+                for (Part part : request.getParts()) {
+                    String partName = part.getName();
+                    if (partName.startsWith(prefix)) {
+                        String path = partName.substring(prefix.length());
+                        setMapFileByPath(obj, path, part);
+                    }
+                }
+            } catch (IOException | jakarta.servlet.ServletException e) {
+                throw new RuntimeException("Error binding multipart parts: " + e.getMessage(), e);
             }
 
             return obj;
@@ -140,6 +191,110 @@ public class Binder {
         } catch (Exception e) {
             throw new RuntimeException("Error setting value by path: " + path + ", value: " + value, e);
         }
+    }
+
+    private static void setMapFileByPath(Object obj, String path, Part part) {
+        try {
+            String[] steps = path.split("\\.");
+            Object current = obj;
+
+            for (int i = 0; i < steps.length; i++) {
+                String step = steps[i];
+                boolean isLast = (i == steps.length - 1);
+
+                if (step.contains("[")) {
+                    int bracketIndex = step.indexOf("[");
+                    String fieldName = step.substring(0, bracketIndex);
+                    int index = Integer.parseInt(step.substring(bracketIndex + 1, step.length() - 1));
+
+                    Field field = getField(current.getClass(), fieldName);
+                    field.setAccessible(true);
+
+                    @SuppressWarnings("unchecked")
+                    List<Object> list = (List<Object>) field.get(current);
+
+                    if (list == null) {
+                        list = new ArrayList<>();
+                        field.set(current, list);
+                    }
+
+                    while (list.size() <= index) {
+                        list.add(null);
+                    }
+
+                    if (isLast) {
+                        Type genericType = field.getGenericType();
+                        if (genericType instanceof ParameterizedType) {
+                            ParameterizedType pt = (ParameterizedType) genericType;
+                            Type elementType = pt.getActualTypeArguments()[0];
+                            Class<?> elementClass = getClass(elementType);
+                            if (elementClass == MapFile.class) {
+                                MapFile mapFile = createMapFileFromPart(part);
+                                list.set(index, mapFile);
+                            }
+                        }
+                    } else {
+                        if (list.get(index) == null) {
+                            Type genericType = field.getGenericType();
+                            if (genericType instanceof ParameterizedType) {
+                                ParameterizedType pt = (ParameterizedType) genericType;
+                                Type elementType = pt.getActualTypeArguments()[0];
+                                Class<?> elementClass = getClass(elementType);
+                                list.set(index, elementClass.getDeclaredConstructor().newInstance());
+                            }
+                        }
+                        current = list.get(index);
+                    }
+                } else {
+                    Field field = getField(current.getClass(), step);
+                    field.setAccessible(true);
+
+                    if (isLast) {
+                        if (field.getType() == MapFile.class) {
+                            MapFile mapFile = createMapFileFromPart(part);
+                            field.set(current, mapFile);
+                        }
+                    } else {
+                        Object child = field.get(current);
+                        if (child == null) {
+                            if (List.class.isAssignableFrom(field.getType())) {
+                                child = new ArrayList<>();
+                            } else {
+                                child = field.getType().getDeclaredConstructor().newInstance();
+                            }
+                            field.set(current, child);
+                        }
+                        current = child;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error setting MapFile by path: " + path, e);
+        }
+    }
+
+    private static MapFile createMapFileFromPart(Part part) throws IOException {
+        String fileName = part.getSubmittedFileName();
+        if (fileName == null || fileName.isEmpty()) {
+            return null;
+        }
+
+        String nom;
+        String extension = "";
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex > 0) {
+            nom = fileName.substring(0, dotIndex);
+            extension = fileName.substring(dotIndex + 1);
+        } else {
+            nom = fileName;
+        }
+
+        byte[] binaire = new byte[(int) part.getSize()];
+        try (InputStream inputStream = part.getInputStream()) {
+            inputStream.read(binaire);
+        }
+
+        return new MapFile(nom, extension, binaire);
     }
 
     private static Field getField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
