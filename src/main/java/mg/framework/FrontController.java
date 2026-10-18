@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,6 +21,7 @@ import mg.framework.utils.Binder;
 import mg.framework.utils.ClassScanner;
 import mg.framework.utils.UrlMappingInfo;
 
+@MultipartConfig
 public class FrontController extends HttpServlet {
 
     private Map<String, UrlMappingInfo> urlMap;
