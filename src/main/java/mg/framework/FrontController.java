@@ -9,12 +9,14 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import mg.framework.annotation.RestAPI;
 import mg.framework.annotation.UrlMapping;
 import mg.framework.utils.Binder;
@@ -131,20 +133,52 @@ public class FrontController extends HttpServlet {
         } else {
             try {
                 Class<?> clazz = mapping.getControllerClass();
-                Object controllerInstance = clazz.getDeclaredConstructor().newInstance();
                 Method methodToInvoke = mapping.getMethod();
+                
+                @SuppressWarnings("unchecked")
+                ConcurrentMap<Class<?>, Object> controllerInstances = 
+                    (ConcurrentMap<Class<?>, Object>) getServletContext().getAttribute("controllerInstances");
+                
+                Object controllerInstance;
+                if (controllerInstances != null) {
+                    controllerInstance = controllerInstances.computeIfAbsent(clazz, c -> {
+                        try {
+                            return c.getDeclaredConstructor().newInstance();
+                        } catch (Exception e) {
+                            throw new RuntimeException("Error creating controller instance", e);
+                        }
+                    });
+                } else {
+                    controllerInstance = clazz.getDeclaredConstructor().newInstance();
+                }
                 
                 // Data Binding : remplir les paramètres de la méthode
                 Object[] args = Binder.bindParams(req, methodToInvoke);
                 
                 RestAPI restApiAnnotation = methodToInvoke.getAnnotation(RestAPI.class);
                 
+                Object result;
+                MySession mySession = null;
+                
+                // Trouver MySession dans les arguments
+                for (Object arg : args) {
+                    if (arg instanceof MySession) {
+                        mySession = (MySession) arg;
+                        break;
+                    }
+                }
+                
                 if (restApiAnnotation != null) {
                     resp.setContentType("application/json");
                     resp.setCharacterEncoding("UTF-8");
                     PrintWriter out = resp.getWriter();
                     
-                    Object result = methodToInvoke.invoke(controllerInstance, args);
+                    result = methodToInvoke.invoke(controllerInstance, args);
+                    
+                    // Mettre à jour la session HTTP après l'invocation
+                    if (mySession != null) {
+                        updateHttpSession(req, mySession);
+                    }
                     
                     if (result instanceof String) {
                         out.print((String) result);
@@ -155,7 +189,12 @@ public class FrontController extends HttpServlet {
                     }
                     out.flush();
                 } else {
-                    Object result = methodToInvoke.invoke(controllerInstance, args);
+                    result = methodToInvoke.invoke(controllerInstance, args);
+                    
+                    // Mettre à jour la session HTTP après l'invocation
+                    if (mySession != null) {
+                        updateHttpSession(req, mySession);
+                    }
 
                     if (result instanceof ModelAndView) {
                         ModelAndView mv = (ModelAndView) result;
@@ -199,6 +238,27 @@ public class FrontController extends HttpServlet {
                 PrintWriter out = resp.getWriter();
                 out.println("Erreur lors de l'invocation : " + e.getMessage());
                 e.printStackTrace(out);
+            }
+        }
+    }
+    
+    private void updateHttpSession(HttpServletRequest request, MySession mySession) {
+        HttpSession httpSession = request.getSession(true);
+        Set<String> initialKeys = mySession.getInitialKeys();
+        Set<String> currentKeys = mySession.getNames();
+        
+        // Ajouter ou mettre à jour les variables
+        for (String key : currentKeys) {
+            Object value = mySession.get(key);
+            httpSession.setAttribute(key, value);
+        }
+        
+        // Supprimer les variables qui ont été retirées de MySession
+        if (initialKeys != null) {
+            for (String key : initialKeys) {
+                if (!currentKeys.contains(key)) {
+                    httpSession.removeAttribute(key);
+                }
             }
         }
     }
