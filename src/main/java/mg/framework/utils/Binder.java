@@ -1,8 +1,10 @@
 package mg.framework.utils;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.Part;
 import mg.framework.MapFile;
+import mg.framework.MySession;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -11,8 +13,11 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Binder {
 
@@ -27,6 +32,8 @@ public class Binder {
             if (isSimple(paramType)) {
                 String paramValue = request.getParameter(paramName);
                 args[i] = convertValue(paramValue, paramType);
+            } else if (paramType == MySession.class) {
+                args[i] = bindMySession(request);
             } else if (paramType == MapFile.class) {
                 args[i] = bindMapFile(request, paramName);
             } else {
@@ -44,6 +51,27 @@ public class Binder {
                type == double.class || type == Double.class ||
                type == float.class || type == Float.class ||
                type == boolean.class || type == Boolean.class;
+    }
+
+    private static MySession bindMySession(HttpServletRequest request) {
+        MySession mySession = new MySession();
+        HttpSession httpSession = request.getSession(false);
+        
+        if (httpSession != null) {
+            Set<String> initialKeys = new HashSet<>();
+            Enumeration<String> attributeNames = httpSession.getAttributeNames();
+            
+            while (attributeNames.hasMoreElements()) {
+                String attributeName = attributeNames.nextElement();
+                Object attributeValue = httpSession.getAttribute(attributeName);
+                mySession.add(attributeName, attributeValue);
+                initialKeys.add(attributeName);
+            }
+            
+            mySession.setInitialKeys(initialKeys);
+        }
+        
+        return mySession;
     }
 
     private static MapFile bindMapFile(HttpServletRequest request, String paramName) {

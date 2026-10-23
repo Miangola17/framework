@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -42,6 +43,9 @@ public class ContextListener implements ServletContextListener {
         }
         
         sce.getServletContext().setAttribute("urlMap", map);
+        
+        Map<Class<?>, Object> controllerInstances = new ConcurrentHashMap<>();
+        sce.getServletContext().setAttribute("controllerInstances", controllerInstances);
         
         System.out.println("=== URLs supportees au demarrage (ContextListener) ===");
         for (UrlMappingInfo info : map.values()) {
