@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import mg.framework.annotation.Authenticated;
 import mg.framework.annotation.RestAPI;
 import mg.framework.annotation.UrlMapping;
 import mg.framework.utils.Binder;
@@ -29,6 +30,7 @@ public class FrontController extends HttpServlet {
     private Map<String, UrlMappingInfo> urlMap;
     private String prefixe;
     private String suffixe;
+    private String authSessionKey;
 
     @Override
     public void init() throws ServletException {
@@ -36,12 +38,16 @@ public class FrontController extends HttpServlet {
 
         this.prefixe = getInitParameter("prefixe");
         this.suffixe = getInitParameter("suffixe");
+        this.authSessionKey = getInitParameter("auth-session-key");
 
         if (this.prefixe == null) {
             this.prefixe = "/WEB-INF/views/";
         }
         if (this.suffixe == null) {
             this.suffixe = ".jsp";
+        }
+        if (this.authSessionKey == null) {
+            this.authSessionKey = "user";
         }
 
         @SuppressWarnings("unchecked")
@@ -134,6 +140,16 @@ public class FrontController extends HttpServlet {
             try {
                 Class<?> clazz = mapping.getControllerClass();
                 Method methodToInvoke = mapping.getMethod();
+                
+                // Vérifier l'authentification si la méthode porte l'annotation @Authenticated
+                Authenticated authenticatedAnnotation = methodToInvoke.getAnnotation(Authenticated.class);
+                if (authenticatedAnnotation != null) {
+                    HttpSession session = req.getSession(false);
+                    if (session == null || session.getAttribute(authSessionKey) == null) {
+                        resp.sendError(401, "Authentification requise");
+                        return;
+                    }
+                }
                 
                 @SuppressWarnings("unchecked")
                 ConcurrentMap<Class<?>, Object> controllerInstances = 
