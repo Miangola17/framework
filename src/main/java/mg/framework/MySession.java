@@ -13,6 +13,10 @@ public class MySession {
         this.data = new HashMap<>();
     }
     
+    public Map<String, Object> getData() {
+        return data;
+    }
+    
     public void setInitialKeys(Set<String> keys) {
         this.initialKeys = keys;
     }
@@ -35,9 +39,5 @@ public class MySession {
     
     public Set<String> getNames() {
         return data.keySet();
-    }
-    
-    public Map<String, Object> getData() {
-        return data;
     }
 }
