@@ -31,6 +31,7 @@ public class FrontController extends HttpServlet {
     private String prefixe;
     private String suffixe;
     private String authSessionKey;
+    private String roleSessionKey;
 
     @Override
     public void init() throws ServletException {
@@ -39,6 +40,7 @@ public class FrontController extends HttpServlet {
         this.prefixe = getInitParameter("prefixe");
         this.suffixe = getInitParameter("suffixe");
         this.authSessionKey = getInitParameter("auth-session-key");
+        this.roleSessionKey = getInitParameter("role-session-key");
 
         if (this.prefixe == null) {
             this.prefixe = "/WEB-INF/views/";
@@ -48,6 +50,9 @@ public class FrontController extends HttpServlet {
         }
         if (this.authSessionKey == null) {
             this.authSessionKey = "user";
+        }
+        if (this.roleSessionKey == null) {
+            this.roleSessionKey = "role";
         }
 
         @SuppressWarnings("unchecked")
@@ -148,6 +153,30 @@ public class FrontController extends HttpServlet {
                     if (session == null || session.getAttribute(authSessionKey) == null) {
                         resp.sendError(401, "Authentification requise");
                         return;
+                    }
+                    
+                    // Vérifier les rôles si l'annotation en a
+                    String[] roles = authenticatedAnnotation.roles();
+                    if (roles != null && roles.length > 0) {
+                        Object roleObj = session.getAttribute(roleSessionKey);
+                        if (roleObj == null) {
+                            resp.sendError(403, "Role requis");
+                            return;
+                        }
+                        
+                        String userRole = roleObj.toString();
+                        boolean roleAuthorized = false;
+                        for (String role : roles) {
+                            if (role.equals(userRole)) {
+                                roleAuthorized = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!roleAuthorized) {
+                            resp.sendError(403, "Role non autorise");
+                            return;
+                        }
                     }
                 }
                 
